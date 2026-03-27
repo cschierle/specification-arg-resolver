@@ -333,7 +333,7 @@ public class SimpleSpecificationResolverTest extends ResolverTestBase {
         }
 
         public void testMethodWithLocaleAwareSpecAndCustomLocaleConfig(
-        		@Spec(path = "thePath", params = "theParameter", spec = EqualIgnoreCase.class, config = "tr_TR") Specification<Object> spec) {
+				@Spec(path = "thePath", params = "theParameter", spec = EqualIgnoreCase.class, config = "tr_TR", onTypeMismatch = EXCEPTION) Specification<Object> spec) {
         }
 
         public void testMethodWithConst1(@Spec(path = "thePath", spec = Equal.class, constVal = "constVal1", onTypeMismatch = EXCEPTION) Specification<Object> spec) {

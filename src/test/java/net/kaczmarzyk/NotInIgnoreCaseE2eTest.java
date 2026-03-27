@@ -99,6 +99,14 @@ public class NotInIgnoreCaseE2eTest extends E2eTestBase {
             return customerRepo.findAll(spec);
         }
 
+        @RequestMapping(value = "/customers-formatted-date", params = "registrationDateNotInIgnoreCase")
+        @ResponseBody
+        public Object findCustomersByFormattedRegistrationDateIgnoringCase(
+                @Spec(path = "registrationDate", params = "registrationDateNotInIgnoreCase", config = {"dd.MM.yyyy"}, spec = NotInIgnoreCase.class) Specification<Customer> spec) {
+
+            return customerRepo.findAll(spec);
+        }
+
         @RequestMapping(value = "/customers-param-separator", params = "registrationDateNotInIgnoreCase")
         @ResponseBody
         public Object findCustomersByRegistrationDateIgnoringCaseUsingParamSeparator(
@@ -217,6 +225,21 @@ public class NotInIgnoreCaseE2eTest extends E2eTestBase {
     public void findsByListOfAllowedDateValuesIgnoringCase() throws Exception {
         mockMvc.perform(get(BASE_URL + "/customers")
                         .param("registrationDateNotInIgnoreCase", "2014-03-20", "2014-03-15")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].firstName").value("Bart"))
+                .andExpect(jsonPath("$[1].firstName").value("Lisa"))
+                .andExpect(jsonPath("$[2].firstName").value("Maggie"))
+                .andExpect(jsonPath("$[3].firstName").value("Minnie"))
+                .andExpect(jsonPath("$[4].firstName").value("Ned"))
+                .andExpect(jsonPath("$[5]").doesNotExist());
+    }
+
+    @Test
+    public void findsByListOfAllowedFormattedDateValuesIgnoringCase() throws Exception {
+        mockMvc.perform(get(BASE_URL + "/customers-formatted-date")
+                        .param("registrationDateNotInIgnoreCase", "20.03.2014", "15.03.2014")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())

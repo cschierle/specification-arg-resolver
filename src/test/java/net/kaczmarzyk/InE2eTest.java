@@ -97,6 +97,14 @@ public class InE2eTest extends E2eTestBase {
 			return customerRepo.findAll(spec);
 		}
 
+		@RequestMapping(value = "/customers-formatted-date", params = "registrationDateIn")
+		@ResponseBody
+		public Object findCustomersByFormattedRegistrationDate(
+				@Spec(path = "registrationDate", params = "registrationDateIn", config = {"dd.MM.yyyy"}, spec = In.class) Specification<Customer> spec) {
+
+			return customerRepo.findAll(spec);
+		}
+
 		@RequestMapping(value = "/customers-param-separator", params = "registrationDateIn")
 		@ResponseBody
 		public Object findCustomersByRegistrationDateUsingParamSeparator(
@@ -211,6 +219,18 @@ public class InE2eTest extends E2eTestBase {
 	public void findsByListOfAllowedDateValues() throws Exception {
 		mockMvc.perform(get("/customers")
 				.param("registrationDateIn", "2014-03-30", "2014-03-31")
+				.accept(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$").isArray())
+			.andExpect(jsonPath("$[0].firstName").value("Lisa"))
+			.andExpect(jsonPath("$[1].firstName").value("Maggie"))
+			.andExpect(jsonPath("$[2]").doesNotExist());
+	}
+
+	@Test
+	public void findsByListOfAllowedFormattedDateValues() throws Exception {
+		mockMvc.perform(get("/customers-formatted-date")
+				.param("registrationDateIn", "30.03.2014", "31.03.2014")
 				.accept(MediaType.APPLICATION_JSON))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$").isArray())

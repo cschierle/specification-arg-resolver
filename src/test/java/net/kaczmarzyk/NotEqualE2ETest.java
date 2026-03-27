@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import net.kaczmarzyk.spring.data.jpa.domain.Equal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
@@ -67,6 +68,14 @@ public class NotEqualE2ETest extends E2eTestBase {
 			return customerRepo.findAll(spec);
 		}
 
+		@RequestMapping(value = "/customers-formatted-date", params = "registrationDateEq!")
+		@ResponseBody
+		public Object findCustomersByFormattedRegistrationDate(
+				@Spec(path = "registrationDate", params = "registrationDateEq!", config = {"dd.MM.yyyy"}, spec = NotEqual.class) Specification<Customer> spec) {
+
+			return customerRepo.findAll(spec);
+		}
+
 		@RequestMapping(value = "/customers", params = "gender!")
 		@ResponseBody
 		public Object findCustomersByGender(
@@ -103,6 +112,17 @@ public class NotEqualE2ETest extends E2eTestBase {
 		mockMvc.perform(get("/customers")
 				.param("registrationDateEq!", "2014-03-31")
 				.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$.length()").value(7))
+				.andExpect(jsonPath("$.[?(@.firstName=='Maggie')]").doesNotExist());
+	}
+
+	@Test
+	public void findsByExactFormattedDateValue() throws Exception {
+		mockMvc.perform(get("/customers-formatted-date")
+						.param("registrationDateEq!", "31.03.2014")
+						.accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$").isArray())
 				.andExpect(jsonPath("$.length()").value(7))

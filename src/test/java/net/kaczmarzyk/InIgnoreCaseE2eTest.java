@@ -99,6 +99,14 @@ public class InIgnoreCaseE2eTest extends E2eTestBase {
             return customerRepo.findAll(spec);
         }
 
+        @RequestMapping(value = "/customers-formatted-date", params = "registrationDateInIgnoreCase")
+        @ResponseBody
+        public Object findCustomersByFormattedRegistrationDateIgnoringCase(
+                @Spec(path = "registrationDate", params = "registrationDateInIgnoreCase", config = {"dd.MM.yyyy"}, spec = InIgnoreCase.class) Specification<Customer> spec) {
+
+            return customerRepo.findAll(spec);
+        }
+
         @RequestMapping(value = "/customers-param-separator", params = "registrationDateInIgnoreCase")
         @ResponseBody
         public Object findCustomersByRegistrationDateIgnoringCaseUsingParamSeparator(
@@ -213,6 +221,18 @@ public class InIgnoreCaseE2eTest extends E2eTestBase {
     public void findsByListOfAllowedDateValuesIgnoringCase() throws Exception {
         mockMvc.perform(get(BASE_URL + "/customers")
                         .param("registrationDateInIgnoreCase", "2014-03-30", "2014-03-31")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].firstName").value("Lisa"))
+                .andExpect(jsonPath("$[1].firstName").value("Maggie"))
+                .andExpect(jsonPath("$[2]").doesNotExist());
+    }
+
+    @Test
+    public void findsByListOfAllowedFormattedDateValuesIgnoringCase() throws Exception {
+        mockMvc.perform(get(BASE_URL + "/customers-formatted-date")
+                        .param("registrationDateInIgnoreCase", "30.03.2014", "31.03.2014")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())

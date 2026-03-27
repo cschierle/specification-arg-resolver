@@ -18,6 +18,7 @@ package net.kaczmarzyk;
 import net.kaczmarzyk.spring.data.jpa.Customer;
 import net.kaczmarzyk.spring.data.jpa.CustomerRepository;
 import net.kaczmarzyk.spring.data.jpa.IntegrationTestBase;
+import net.kaczmarzyk.spring.data.jpa.domain.EqualIgnoreCase;
 import net.kaczmarzyk.spring.data.jpa.domain.NotEqualIgnoreCase;
 import net.kaczmarzyk.spring.data.jpa.web.annotation.Spec;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +67,14 @@ public class NotEqualIgnoreCaseE2eTest extends IntegrationTestBase {
 
 			return customerRepo.findAll(spec);
 		}
+
+		@RequestMapping(value = "/customers-formatted-date", params = "registrationDateNotEqualIgnoreCase")
+		@ResponseBody
+		public Object findCustomersByFormattedRegistrationDateIgnoringCase(
+				@Spec(path = "registrationDate", params = "registrationDateNotEqualIgnoreCase", config = {"dd.MM.yyyy"}, spec = NotEqualIgnoreCase.class) Specification<Customer> spec) {
+
+			return customerRepo.findAll(spec);
+		}
 	}
 
 	@Autowired
@@ -75,11 +84,11 @@ public class NotEqualIgnoreCaseE2eTest extends IntegrationTestBase {
 
 	@BeforeEach
 	public void initializeTestData() {
-		customer("Homer", "Simpson").gender(MALE).build(em);
-		customer("Marge", "Simpson").gender(FEMALE).build(em);
-		customer("Bart", "Simpson").gender(MALE).build(em);
-		customer("Lisa", "Simpson").gender(FEMALE).build(em);
-		customer("Maggie", "Simpson").gender(FEMALE).build(em);
+		customer("Homer", "Simpson").gender(MALE).registrationDate(2026, 3, 27).build(em);
+		customer("Marge", "Simpson").gender(FEMALE).registrationDate(2026, 3, 27).build(em);
+		customer("Bart", "Simpson").gender(MALE).registrationDate(2026, 3, 27).build(em);
+		customer("Lisa", "Simpson").gender(FEMALE).registrationDate(2026, 3, 27).build(em);
+		customer("Maggie", "Simpson").gender(FEMALE).registrationDate(2026, 3, 31).build(em);
 
 		this.mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
 	}
@@ -109,6 +118,17 @@ public class NotEqualIgnoreCaseE2eTest extends IntegrationTestBase {
 				.andExpect(jsonPath("$[1].firstName").value("Lisa"))
 				.andExpect(jsonPath("$[2].firstName").value("Maggie"))
 				.andExpect(jsonPath("$[3]").doesNotExist());
+	}
+
+	@Test
+	public void findsByFormattedDateValueIgnoringCase() throws Exception {
+		mockMvc.perform(get("/not-equal-ignore-case/customers-formatted-date")
+						.param("registrationDateNotEqualIgnoreCase", "27.03.2026")
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[0].firstName").value("Maggie"))
+				.andExpect(jsonPath("$[1]").doesNotExist());
 	}
 
 }
