@@ -142,9 +142,10 @@ class SimpleSpecificationResolver implements SpecificationResolver<Spec> {
 	private Locale determineLocale(Spec def) {
 		if (def.config().length == 0) {
 			return defaultLocale;
-		} else {
-			return LocaleUtils.toLocale(def.config()[0]);
 		}
+
+		Locale localeFromConfig = resolveLocaleFromConfig(def);
+		return localeFromConfig != null ? localeFromConfig : defaultLocale;
 	}
 	
 	private Converter resolveConverter(Spec def) {
@@ -152,16 +153,28 @@ class SimpleSpecificationResolver implements SpecificationResolver<Spec> {
 			return Converter.withTypeMismatchBehaviour(def.onTypeMismatch(), conversionService, defaultLocale);
 		}
 		if (def.config().length == 1) {
-			if (LocaleAware.class.isAssignableFrom(def.spec())) { // if specification is locale-aware, then we assume that config contains locale
-				String localeConfig = def.config()[0];
-				Locale customlocale = LocaleUtils.toLocale(localeConfig);
-				return Converter.withTypeMismatchBehaviour(def.onTypeMismatch(), conversionService, customlocale);
-			} else { // otherwise we assume that config contains date format
-				String dateFormat = def.config()[0];
-				return Converter.withDateFormat(dateFormat, def.onTypeMismatch(), conversionService);
+			Locale localeFromConfig = resolveLocaleFromConfig(def);
+			if (localeFromConfig != null) {
+				return Converter.withTypeMismatchBehaviour(def.onTypeMismatch(), conversionService, localeFromConfig);
 			}
+
+			String dateFormat = def.config()[0];
+			return Converter.withDateFormat(dateFormat, def.onTypeMismatch(), conversionService);
 		}
 		throw new IllegalStateException("config should contain only one value -- a date format"); // TODO support other config values as well
+	}
+
+	private Locale resolveLocaleFromConfig(Spec def) {
+		if (!LocaleAware.class.isAssignableFrom(def.spec()) || def.config().length != 1) {
+			return null;
+		}
+
+		String localeConfig = def.config()[0];
+		try {
+			return LocaleUtils.toLocale(localeConfig);
+		} catch (IllegalArgumentException ex) {
+			return null;
+		}
 	}
 	
 	

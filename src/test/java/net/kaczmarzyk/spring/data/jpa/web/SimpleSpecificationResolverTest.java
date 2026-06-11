@@ -21,6 +21,7 @@ import net.kaczmarzyk.spring.data.jpa.utils.QueryContext;
 import net.kaczmarzyk.spring.data.jpa.web.annotation.OnTypeMismatch;
 import net.kaczmarzyk.spring.data.jpa.web.annotation.Spec;
 import net.kaczmarzyk.utils.ReflectionUtils;
+import org.apache.commons.lang3.LocaleUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.data.jpa.domain.Specification;
@@ -283,7 +284,42 @@ public class SimpleSpecificationResolverTest extends ResolverTestBase {
         		.isInstanceOf(IllegalStateException.class);
     }
 
-    
+    @Test
+    public void buildsLocaleAwareSpecUsingCustomLocaleConfig() {
+        MethodParameter param = MethodParameter.forExecutable(testMethod("testMethodWithLocaleAwareSpecAndCustomLocaleConfig"), 0);
+        NativeWebRequest req = mock(NativeWebRequest.class);
+        QueryContext queryCtx = new DefaultQueryContext();
+        when(req.getParameterValues("theParameter")).thenReturn(new String[] { "example" });
+
+        Specification<?> resolved = resolver.buildSpecification(new WebRequestProcessingContext(param, req), param.getParameterAnnotation(Spec.class));
+
+        Locale customLocale = LocaleUtils.toLocale("tr_TR");
+        EqualIgnoreCase<?> expected = new EqualIgnoreCase<>(queryCtx, "thePath", new String[] { "example" },
+                Converter.withTypeMismatchBehaviour(EXCEPTION, null, customLocale));
+        expected.setIgnoreCaseStrategy(IgnoreCaseStrategy.DATABASE_UPPER);
+        expected.setLocale(customLocale);
+
+        assertThat(resolved).isEqualTo(expected);
+    }
+
+    @Test
+    public void buildsLocaleAwareSpecUsingDateFormatConfigWhenConfigIsNotLocale() {
+        MethodParameter param = MethodParameter.forExecutable(testMethod("testMethodWithLocaleAwareSpecAndDateFormatConfig"), 0);
+        NativeWebRequest req = mock(NativeWebRequest.class);
+        QueryContext queryCtx = new DefaultQueryContext();
+        when(req.getParameterValues("theParameter")).thenReturn(new String[] { "24.12.2024" });
+
+        Specification<?> resolved = resolver.buildSpecification(new WebRequestProcessingContext(param, req), param.getParameterAnnotation(Spec.class));
+
+        EqualIgnoreCase<?> expected = new EqualIgnoreCase<>(queryCtx, "thePath", new String[] { "24.12.2024" },
+                Converter.withDateFormat("dd.MM.yyyy", EXCEPTION, null));
+        expected.setIgnoreCaseStrategy(IgnoreCaseStrategy.DATABASE_UPPER);
+        expected.setLocale(Locale.getDefault());
+
+        assertThat(resolved).isEqualTo(expected);
+    }
+
+
 
     public static class TestController {
 
@@ -334,6 +370,10 @@ public class SimpleSpecificationResolverTest extends ResolverTestBase {
 
         public void testMethodWithLocaleAwareSpecAndCustomLocaleConfig(
 				@Spec(path = "thePath", params = "theParameter", spec = EqualIgnoreCase.class, config = "tr_TR", onTypeMismatch = EXCEPTION) Specification<Object> spec) {
+        }
+
+        public void testMethodWithLocaleAwareSpecAndDateFormatConfig(
+                @Spec(path = "thePath", params = "theParameter", spec = EqualIgnoreCase.class, config = "dd.MM.yyyy", onTypeMismatch = EXCEPTION) Specification<Object> spec) {
         }
 
         public void testMethodWithConst1(@Spec(path = "thePath", spec = Equal.class, constVal = "constVal1", onTypeMismatch = EXCEPTION) Specification<Object> spec) {
